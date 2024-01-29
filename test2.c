@@ -50,14 +50,14 @@ int main()
     int n;
 
     /* Create socket */
-    request_sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    request_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     printf("Servers listening socket created. \n");
 
     /* Fill in the address structure */
     memset(&serveraddr, 0, sizeof(struct sockaddr_in));
     serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = INADDR_ANY;
+    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     serveraddr.sin_port = htons(SERVER_PORT);
 
     /* Bind address to socket */
@@ -77,17 +77,17 @@ int main()
         /* Read data from socket and write it */
         n = read(sd, buf, sizeof(buf) - 1);
         buf[n] = '\0';  // Null-terminate the string
-        printf("%s", buf);
+        printf("buf %s \n", buf);
 
-        if (strstr(buf, "GET /index HTTP/1.1") != NULL)
+        if (strstr(buf, "GET /index.html") != NULL)
         {
             // Send index.html back to the client
             send_file(sd, "sample_website/index.html", "text/html");
         }
-        else if (strstr(buf, "GET /image.jpg") != NULL)
+        else if (strstr(buf, "GET /img/quokka.jpg") != NULL)
         {
             // Send image.jpg back to the client
-            send_file(sd, "sample_website/image.jpg", "image/jpeg");
+            send_file(sd, "sample_website/img/quokka.jpg", "image/jpeg");
         }
         else
         {
