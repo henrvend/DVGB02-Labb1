@@ -3,45 +3,45 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <unistd.h>
 #include <fcntl.h>
 
-#define SERVER_PORT 4446
+#define SERVER_PORT 8080
 #define BUFFER_SIZE 4096
 
-char *jpg = "jpeg";
-char *gif = "gif";
-char *html = "html";
 
-void contType(char * type, int sd){
-	if (!strcmp(type,jpg))
-	{
-		write(sd,"HTTP/1.1 200 OK\r\n",17);
-		write(sd ,"Content-Type: image/jpeg\r\n", 26);  // 26 för JPEG 25 för GIF   
-		write(sd,"\r\n",2);
-	}
-	if (!strcmp(type,gif))
-	{
-		write(sd,"HTTP/1.1 200 OK\r\n",17);
-		write(sd ,"Content-Type: image/gif\r\n", 25);  // 26 för JPEG 25 för GIF   
-		write(sd,"\r\n",2);
-	}
-	if (!strcmp(type,html))
-	{
-		write(sd,"HTTP/1.1 200 OK\r\n",17);
-		write(sd ,"Content-Type: text/html\r\n", 25);  // 26 för JPEG 25 för GIF   
-		write(sd,"\r\n",2);
-	}
+void send_file(int client_sd, const char *filename, char *content_type)
+{
+    FILE *file = fopen(filename, "rb");
+	
+
+    if (file != NULL)
+    {
+        // Send HTTP response header
+        dprintf(client_sd, "HTTP/1.1 200 OK\r\nServer: Demo Web Server\r\nContent-Type: %s\r\n\r\n", content_type);
+
+        // Send the content of the file
+        char buffer[BUFFER_SIZE];
+        size_t bytes_read;
+
+        while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0)
+        {
+            write(client_sd, buffer, bytes_read);
+        }
+
+        // Close the file
+        fclose(file);
+    }
+    else
+    {
+        // File not found (404)
+        const char *response_404 = "HTTP/1.1 404 Not Found\r\nServer: Demo Web Server\r\n\r\nFile not found";
+        write(client_sd, response_404, strlen(response_404));
+    }
 }
 
-
-void sendResp(int sd, int a, char * type){
-	if(a == 1)
-	{
-		contType(type, sd);
-	}
-}
 
 int main()
 {
@@ -49,7 +49,7 @@ int main()
 	struct sockaddr_in serveraddr;
 	struct sockaddr_in clientaddr;
 	int clientaddrlen;
-	int request_sd, sd, fd;
+	int request_sd, sd, fd, s, on = 1;
 	int bytes;
 	char buf[BUFFER_SIZE];
 	char * ContentToken;
@@ -64,8 +64,13 @@ int main()
 	/* Fill in the address structure */
 	memset(&serveraddr, 0, sizeof(struct sockaddr_in));
 	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = INADDR_ANY;
+	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serveraddr.sin_port = htons(8080);
+
+
+	if(request_sd < 0) perror("socket failed");
+	setsockopt(request_sd,SOL_SOCKET,SO_REUSEADDR,(char *)&on,sizeof(on));
+
 	/* Bind address to socket */
 	bind(request_sd, (struct sockaddr *)&serveraddr, sizeof(struct sockaddr_in));
 	printf("Servers address binded to the socket. \n");
@@ -80,31 +85,24 @@ int main()
 		sd = accept(request_sd, (struct sockaddr *)&clientaddr, &clientaddrlen);
 		printf("Client connected. \n");
 		read(sd, buf, BUFFER_SIZE);
-		printf("%s \n", buf);
-		/*if (!fork())
-		{*/
+		printf("buf:: %s \n", buf);
+		//if (!fork())
+		//{
 			/* Read data from socket and write it */
-			read(sd, buf, BUFFER_SIZE);
 			token = strtok(buf, " ");
-			token = strtok(NULL," /");
+			token = strtok(NULL," ");
 			printf("token: %s\n", token);
-			fd = open(buf, O_RDONLY); /* open the file to be sent back */		
-			ContentToken = strtok(token,".");	/*Parse out the content type*/
+			memmove(token, token+1, strlen(token));
+			printf("token: %s\n", token);
+			char temp[BUFFER_SIZE];
+			strcpy(temp, token);
+			printf("temp: %s\n", temp);
+			ContentToken = strtok(temp,".");	/*Parse out the content type*/
 			ContentToken = strtok(NULL,"");
-			
-			
-			if(fd>0)
-			{
-				sendResp(sd, 0, ContentToken);
-				while(1)
-				{
-					bytes = read(fd,buf,BUFFER_SIZE);
-					if(bytes<=0) break;
-					write(sd, buf, bytes);
-				}
-			}
-			close(fd);
-		/*}*/
+			printf("cont token: %s\n", ContentToken);
+			send_file(sd, token, ContentToken);
+			printf("Testar");			
+		//}
 	}
 
 	/*Close sockets */
