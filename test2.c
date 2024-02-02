@@ -3,6 +3,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -44,13 +45,14 @@ int main()
     /* Declarations */
     struct sockaddr_in serveraddr;
     struct sockaddr_in clientaddr;
-    int clientaddrlen;
+    socklen_t clientaddrlen; // Ändrad till socklen_t
     int request_sd, sd;
     char buf[BUFFER_SIZE];
     int n;
 
     /* Create socket */
-    request_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    request_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    
 
     printf("Servers listening socket created. \n");
 
@@ -65,30 +67,35 @@ int main()
     printf("Servers address binded to the socket. \n");
 
     /* Activate connect request queue */
-    listen(request_sd, SOMAXCONN);
+    // UDP är ett connectionless protokoll: så listen behövs inte.
+    // listen(request_sd, SOMAXCONN);
 
     while (1)
     {
         /* Receive connection */
         clientaddrlen = sizeof(struct sockaddr_in);
-        sd = accept(request_sd, (struct sockaddr *)&clientaddr, &clientaddrlen);
+        //sd = accept(request_sd, (struct sockaddr *)&clientaddr, &clientaddrlen);
+        n = recvfrom(request_sd, buf, sizeof(buf), 0, (struct sockaddr *)&clientaddr, &clientaddrlen);
         printf("Client connected. \n");
 
-        /* Read data from socket and write it */
-        n = read(sd, buf, sizeof(buf) - 1);
-        buf[n] = '\0';  // Null-terminate the string
         printf("buf %s \n", buf);
 
-        if (strstr(buf, "GET /index.html") != NULL)
+        if (strstr(buf, "GET /test") != NULL)
         {
-            // Send index.html back to the client
-            send_file(sd, "sample_website/index.html", "text/html");
+            // Get current time
+            time_t current_time;
+            struct tm *time_info;
+            time(&current_time);
+            time_info = localtime(&current_time);
+
+            // Format time as a string
+            char time_str[64];
+            strftime(time_str, sizeof(time_str), "Current time: %Y-%m-%d %H:%M:%S", time_info);
+
+            // Send the time back to the client
+            write(sd, time_str, strlen(time_str));
         }
-        else if (strstr(buf, "GET /img/quokka.jpg") != NULL)
-        {
-            // Send image.jpg back to the client
-            send_file(sd, "sample_website/img/quokka.jpg", "image/jpeg");
-        }
+
         else
         {
             // Unknown request
@@ -97,7 +104,7 @@ int main()
         }
 
         /* Close the connection */
-        close(sd);
+        //close(sd);
     }
 
     /* Close the listening socket */
