@@ -10,6 +10,7 @@
 
 #define SERVER_PORT 8080
 #define BUFFER_SIZE 4096
+void send404(int client_sd);
 
 void send_file(int client_sd, const char *filename, char *content_type)
 {
@@ -23,21 +24,35 @@ void send_file(int client_sd, const char *filename, char *content_type)
 		// Send the content of the file
 		char buffer[BUFFER_SIZE];
 		size_t bytes_read;
+		bytes_read = fread(buffer, 1, sizeof(buffer), file);
+		if(bytes_read){
+			while (bytes_read > 0)
+			{
 
-		while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0)
-		{
-			write(client_sd, buffer, bytes_read);
+				write(client_sd, buffer, bytes_read);
+				bytes_read = fread(buffer, 1, sizeof(buffer), file);
+
+			}
 		}
+		else{
+			send404(client_sd);
+		}
+		
+		
 
 		// Close the file
 		fclose(file);
 	}
 	else
 	{
-		// File not found (404)
+		send404(client_sd);	
+	}
+}
+
+void send404(int client_sd){
+	// File not found (404)
 		const char *response_404 = "HTTP/1.1 404 Not Found\r\nServer: Demo Web Server\r\n\r\nFile not found";
 		write(client_sd, response_404, strlen(response_404));
-	}
 }
 
 int main()
@@ -86,15 +101,18 @@ int main()
 
 		token = strtok(buf, " ");
 		token = strtok(NULL, " ");
-		memmove(token, token + 1, strlen(token));
-		char temp[BUFFER_SIZE];
-		strcpy(temp, token);
+		if(token){
+			memmove(token, token + 1, strlen(token));
+			char temp[BUFFER_SIZE];
+			strcpy(temp, token);
 
-		/*Parse out the content type*/
-		ContentToken = strtok(temp, "."); 
-		ContentToken = strtok(NULL, " ");
+			/*Parse out the content type*/
+			ContentToken = strtok(temp, "."); 
+			ContentToken = strtok(NULL, " ");
 
-		send_file(sd, token, ContentToken);
+			send_file(sd, token, ContentToken);
+		
+		}
 		close(sd);
 	}
 
