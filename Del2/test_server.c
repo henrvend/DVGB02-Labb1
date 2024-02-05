@@ -6,7 +6,7 @@
 #include <netinet/in.h> 
 #include <time.h>
 
-#define PORT 37 
+#define PORT 5000 
 #define MAXLINE 1000 
 
   
@@ -38,6 +38,6 @@ int main()
     puts(ctime(&t)); 
            
     // send the response 
-    sendto(listenfd, message, MAXLINE, 0, 
+    sendto(listenfd, ctime(&t), MAXLINE, 0, 
           (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
 } 

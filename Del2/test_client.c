@@ -7,7 +7,7 @@
 #include<unistd.h> 
 #include<stdlib.h> 
   
-#define PORT 37 
+#define PORT 5000 
 #define MAXLINE 1000 
   
 // Driver code 
