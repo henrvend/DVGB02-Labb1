@@ -6,7 +6,7 @@
 #include <netinet/in.h> 
 #include <time.h>
 
-#define PORT 5000 
+#define PORT 37 
 #define MAXLINE 1000 
 
   
