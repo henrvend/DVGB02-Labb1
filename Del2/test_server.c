@@ -6,7 +6,7 @@
 #include <netinet/in.h> 
 #include <time.h>
 
-#define PORT 5000 
+#define PORT 37
 #define MAXLINE 1000 
 
   
@@ -14,15 +14,16 @@
 int main() 
 {    
     char buffer[100]; 
-    char *message = "Hello Client"; 
     time_t t;
     time(&t);
     int listenfd, len; 
     struct sockaddr_in servaddr, cliaddr; 
-    bzero(&servaddr, sizeof(servaddr)); 
+    
+    memset(&servaddr, 0, sizeof(servaddr)); 
   
     // Create a UDP Socket 
-    listenfd = socket(AF_INET, SOCK_DGRAM, 0);         
+    listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+          
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
     servaddr.sin_port = htons(PORT); 
     servaddr.sin_family = AF_INET;  
@@ -32,12 +33,12 @@ int main()
        
     //receive the datagram 
     len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, buffer, sizeof(buffer), 
-            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+
+    //receive message from server 
+    int n = recvfrom(listenfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&cliaddr,&len);
     buffer[n] = '\0'; 
-    puts(ctime(&t)); 
+    puts(buffer); 
            
     // send the response 
-    sendto(listenfd, ctime(&t), MAXLINE, 0, 
-          (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
+    sendto(listenfd, ctime(&t), MAXLINE, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
 } 

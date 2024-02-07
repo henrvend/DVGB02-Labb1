@@ -7,20 +7,23 @@
 #include<unistd.h> 
 #include<stdlib.h> 
   
-#define PORT 5000 
+#define PORT 37 
 #define MAXLINE 1000 
+#define TID 2208988800
   
 // Driver code 
 int main() 
 {    
     char buffer[100]; 
-    char *message = "Hello Server"; 
-    int sockfd, n; 
+    char *message = ""; 
+    int sockfd, n;
+    uint32_t time; 
     struct sockaddr_in servaddr; 
       
     // clear servaddr 
-    bzero(&servaddr, sizeof(servaddr)); 
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    memset(&servaddr, 0, sizeof(servaddr)); 
+
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
     servaddr.sin_port = htons(PORT); 
     servaddr.sin_family = AF_INET; 
       
@@ -33,6 +36,8 @@ int main()
         printf("\n Error : Connect Failed \n"); 
         exit(0); 
     } 
+    
+
   
     // request to send datagram 
     // no need to specify server address in sendto 
